@@ -1,7 +1,7 @@
 import { prisma } from '../config/database';
 import { cache } from '../config/redis';
 import { AppError } from '../middleware/errorHandler';
-import { Vote } from '@prisma/client';
+// import { Vote } from '@prisma/client'; // Commented out - requires Prisma generation
 
 export const votingRecordService = {
   async getVotingRecordsByCandidate(candidateId: string) {
@@ -136,8 +136,8 @@ export const votingRecordService = {
 
     // Format the comparison data
     const votes = billStances
-      .filter(bs => bs.bill.votingRecords.length > 0)
-      .map(bs => ({
+      .filter((bs: any) => bs.bill.votingRecords.length > 0)
+      .map((bs: any) => ({
         bill: bs.bill,
         vote: bs.bill.votingRecords[0],
         relevance: bs.relevance,

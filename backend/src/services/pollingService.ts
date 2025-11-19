@@ -124,7 +124,7 @@ export async function updateAggregatedPollData(
 
     // Calculate intent percentage (definitely + likely)
     const intentCounts = responses.reduce(
-      (acc, r) => {
+      (acc, r: any) => {
         acc[r.intentToVote] = (acc[r.intentToVote] || 0) + 1;
         return acc;
       },
@@ -137,7 +137,7 @@ export async function updateAggregatedPollData(
       responses.length > 0 ? (positiveIntent / responses.length) * 100 : 0;
 
     // Calculate average favorability
-    const totalFavorability = responses.reduce((sum, r) => sum + r.favorability, 0);
+    const totalFavorability = responses.reduce((sum: number, r: any) => sum + r.favorability, 0);
     const favorabilityAvg =
       responses.length > 0 ? totalFavorability / responses.length : 0;
 
@@ -220,13 +220,13 @@ export async function getPublicPollData(
       definitely_not: 0,
     };
 
-    responses.forEach((r) => {
+    responses.forEach((r: any) => {
       intentBreakdown[r.intentToVote as keyof typeof intentBreakdown]++;
     });
 
     // Calculate favorability breakdown
     const favorabilityBreakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    responses.forEach((r) => {
+    responses.forEach((r: any) => {
       favorabilityBreakdown[r.favorability as keyof typeof favorabilityBreakdown]++;
     });
 
@@ -278,7 +278,7 @@ export async function getPollingTrends(
     // Group by day
     const trendsByDay: Record<string, any> = {};
 
-    responses.forEach((response) => {
+    responses.forEach((response: any) => {
       const dateKey = response.createdAt.toISOString().split('T')[0];
 
       if (!trendsByDay[dateKey]) {
