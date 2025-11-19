@@ -219,6 +219,244 @@ async function main() {
 
   console.log(`✅ Created ${upcomingElections.length} elections`);
 
+  // ==================================================
+  // PHASE 2: Survey Questions for Voter Matching
+  // ==================================================
+  console.log('❓ Creating survey questions...');
+
+  // Get all created stances to link survey questions
+  const allStances = await prisma.stance.findMany();
+  const stanceMap = new Map(allStances.map(s => [s.title, s]));
+
+  const surveyQuestions = [
+    // Healthcare
+    {
+      stanceTitle: 'Universal Healthcare',
+      text: 'The government should guarantee healthcare coverage for all citizens.',
+      category: 'Healthcare',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 1,
+    },
+    {
+      stanceTitle: 'Prescription Drug Pricing',
+      text: 'Medicare should be allowed to negotiate prescription drug prices with pharmaceutical companies.',
+      category: 'Healthcare',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 2,
+    },
+    {
+      stanceTitle: 'Reproductive Rights',
+      text: 'Access to reproductive healthcare, including abortion, should be protected by law.',
+      category: 'Healthcare',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 3,
+    },
+
+    // Education
+    {
+      stanceTitle: 'Public Education Funding',
+      text: 'Federal funding for public K-12 education should be significantly increased.',
+      category: 'Education',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 4,
+    },
+    {
+      stanceTitle: 'Higher Education & Student Debt',
+      text: 'The government should cancel some or all student loan debt.',
+      category: 'Education',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 5,
+    },
+
+    // Environment
+    {
+      stanceTitle: 'Climate Change Action',
+      text: 'The government should take aggressive action to reduce carbon emissions, even if it increases costs.',
+      category: 'Environment',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 6,
+    },
+    {
+      stanceTitle: 'Environmental Protection',
+      text: 'Environmental protection regulations should be strengthened, even if it limits business growth.',
+      category: 'Environment',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 7,
+    },
+
+    // Economy
+    {
+      stanceTitle: 'Tax Policy',
+      text: 'Taxes on wealthy individuals and large corporations should be increased.',
+      category: 'Economy',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 8,
+    },
+    {
+      stanceTitle: 'Minimum Wage',
+      text: 'The federal minimum wage should be raised to $15 per hour or higher.',
+      category: 'Economy',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 9,
+    },
+    {
+      stanceTitle: 'Workers Rights & Unions',
+      text: 'Labor unions should have stronger legal protections and collective bargaining rights.',
+      category: 'Economy',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 10,
+    },
+
+    // Criminal Justice
+    {
+      stanceTitle: 'Police Reform',
+      text: 'Police departments need significant reform, including stricter accountability measures.',
+      category: 'Criminal Justice',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 11,
+    },
+    {
+      stanceTitle: 'Sentencing & Prison Reform',
+      text: 'Mandatory minimum sentences for non-violent crimes should be eliminated.',
+      category: 'Criminal Justice',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 12,
+    },
+
+    // Infrastructure
+    {
+      stanceTitle: 'Transportation Infrastructure',
+      text: 'The federal government should invest heavily in infrastructure improvements (roads, bridges, transit).',
+      category: 'Infrastructure',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 13,
+    },
+
+    // Civil Rights
+    {
+      stanceTitle: 'Voting Rights',
+      text: 'Voting should be made easier through measures like automatic registration and mail-in voting.',
+      category: 'Civil Rights',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 14,
+    },
+    {
+      stanceTitle: 'LGBTQ+ Rights',
+      text: 'Anti-discrimination protections should be expanded to include LGBTQ+ individuals.',
+      category: 'Civil Rights',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 15,
+    },
+
+    // Immigration
+    {
+      stanceTitle: 'Immigration Reform',
+      text: 'There should be a pathway to citizenship for undocumented immigrants currently living in the U.S.',
+      category: 'Immigration',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 16,
+    },
+
+    // Foreign Policy
+    {
+      stanceTitle: 'Military & Defense',
+      text: 'Military spending should be reduced to fund domestic programs.',
+      category: 'Foreign Policy',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 17,
+    },
+
+    // Technology
+    {
+      stanceTitle: 'Privacy & Data Protection',
+      text: 'The government should enact stricter regulations on how tech companies collect and use personal data.',
+      category: 'Technology',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 18,
+    },
+
+    // Gun Policy
+    {
+      stanceTitle: 'Gun Control',
+      text: 'Background checks should be required for all gun purchases, including private sales.',
+      category: 'Gun Policy',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 19,
+    },
+
+    // Housing
+    {
+      stanceTitle: 'Affordable Housing',
+      text: 'The government should increase funding for affordable housing and homelessness prevention.',
+      category: 'Housing',
+      scope: 'national',
+      responseType: 'support-oppose',
+      options: [],
+      order: 20,
+    },
+  ];
+
+  let questionCount = 0;
+  for (const q of surveyQuestions) {
+    const stance = stanceMap.get(q.stanceTitle);
+    if (stance) {
+      await prisma.surveyQuestion.create({
+        data: {
+          stanceId: stance.id,
+          text: q.text,
+          category: q.category,
+          scope: q.scope,
+          responseType: q.responseType,
+          options: q.options,
+          order: q.order,
+          isActive: true,
+        },
+      });
+      questionCount++;
+    } else {
+      console.warn(`⚠️  Stance not found: ${q.stanceTitle}`);
+    }
+  }
+
+  console.log(`✅ Created ${questionCount} survey questions`);
   console.log('🎉 Database seed completed successfully!');
 }
 
