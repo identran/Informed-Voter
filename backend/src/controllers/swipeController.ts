@@ -130,7 +130,7 @@ export async function getShortlist(req: Request, res: Response) {
  * DELETE /api/swipe/shortlist/:candidateId
  * Remove candidate from shortlist
  */
-export async function removeFromShort (req: Request, res: Response) {
+export async function removeFromShortlist(req: Request, res: Response) {
   try {
     const userId = req.user?.id;
     const { candidateId } = req.params;

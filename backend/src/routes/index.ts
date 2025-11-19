@@ -5,6 +5,7 @@ import stanceRoutes from './stances';
 import votingRecordRoutes from './voting-records';
 import surveyRoutes from './survey';
 import swipeRoutes from './swipe';
+import pollRoutes from './polls';
 
 const router = Router();
 
@@ -23,5 +24,6 @@ router.use('/stances', stanceRoutes);
 router.use('/voting-records', votingRecordRoutes);
 router.use('/survey', surveyRoutes);
 router.use('/swipe', swipeRoutes);
+router.use('/polls', pollRoutes);
 
 export default router;
