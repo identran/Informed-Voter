@@ -1,0 +1,292 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?
+  name          String?
+  role          UserRole  @default(VOTER)
+  location      String?
+  zipCode       String?
+
+  savedCandidates SavedCandidate[]
+  notifications   Notification[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+}
+
+enum UserRole {
+  VOTER
+  CANDIDATE
+  MODERATOR
+  ADMIN
+}
+
+model Candidate {
+  id                String              @id @default(cuid())
+
+  // Basic Info
+  name              String
+  email             String              @unique
+  phone             String?
+  website           String?
+
+  // Electoral Info
+  office            String
+  district          String?
+  state             String
+  city              String?
+  county            String?
+  electionDate      DateTime?
+
+  // Profile Content
+  bio               String              @db.Text
+  goals             String              @db.Text
+  reasonForRunning  String              @db.Text
+  contactInfo       String?
+
+  // Verification
+  verificationStatus VerificationStatus @default(PENDING)
+  verifiedAt        DateTime?
+  isIncumbent       Boolean            @default(false)
+
+  // External IDs (for vote record matching)
+  bioguideId        String?            @unique // Congress
+  stateLegiId       String?            // State legislature
+  localGovId        String?            // Local government
+
+  // Relations
+  stances           CandidateStance[]
+  votingRecords     VotingRecord[]
+  savedBy           SavedCandidate[]
+
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([state, district])
+  @@index([electionDate])
+  @@index([verificationStatus])
+}
+
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+model Stance {
+  id          String   @id @default(cuid())
+  category    String   // Healthcare, Education, etc.
+  title       String
+  description String   @db.Text
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  candidates  CandidateStance[]
+  bills       BillStance[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+}
+
+model CandidateStance {
+  id              String   @id @default(cuid())
+
+  candidateId     String
+  candidate       Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  stanceId        String
+  stance          Stance   @relation(fields: [stanceId], references: [id], onDelete: Cascade)
+
+  position        String   @db.Text  // Their stated position
+  sourceUrl       String?             // Where they stated this
+  priority        Int?                // How important (1-5)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([candidateId, stanceId])
+  @@index([candidateId])
+  @@index([stanceId])
+}
+
+model Bill {
+  id              String         @id @default(cuid())
+
+  // Bill Identification
+  billNumber      String         @unique  // e.g., "HR-1234", "S-5678"
+  title           String
+  summary         String?        @db.Text
+  fullText        String?        @db.Text
+
+  // Legislative Info
+  chamber         Chamber
+  congress        Int?           // 118th Congress, etc.
+  session         String?
+  legislativeBody String         // "US Congress", "NY State Senate", etc.
+  state           String?
+
+  // Status
+  introducedDate  DateTime
+  lastActionDate  DateTime?
+  status          BillStatus     @default(INTRODUCED)
+
+  // URLs
+  sourceUrl       String         // Official government source
+  fullTextUrl     String?
+
+  // Relations
+  votingRecords   VotingRecord[]
+  stances         BillStance[]
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([billNumber])
+  @@index([chamber, congress])
+  @@index([introducedDate])
+}
+
+enum Chamber {
+  HOUSE
+  SENATE
+  STATE_HOUSE
+  STATE_SENATE
+  CITY_COUNCIL
+  COUNTY_BOARD
+  OTHER
+}
+
+enum BillStatus {
+  INTRODUCED
+  IN_COMMITTEE
+  PASSED_CHAMBER
+  PASSED_BOTH
+  SENT_TO_EXECUTIVE
+  SIGNED
+  VETOED
+  FAILED
+}
+
+model BillStance {
+  id        String   @id @default(cuid())
+
+  billId    String
+  bill      Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  stanceId  String
+  stance    Stance   @relation(fields: [stanceId], references: [id], onDelete: Cascade)
+
+  relevance Int      @default(5)  // How relevant (1-10)
+  notes     String?  @db.Text     // Why this bill relates to stance
+
+  @@unique([billId, stanceId])
+  @@index([billId])
+  @@index([stanceId])
+}
+
+model VotingRecord {
+  id            String     @id @default(cuid())
+
+  candidateId   String
+  candidate     Candidate  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  billId        String
+  bill          Bill       @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  vote          Vote
+  voteDate      DateTime
+  rollCallNum   String?    // Roll call number if available
+
+  sourceUrl     String     // Link to official vote record
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([candidateId, billId])
+  @@index([candidateId])
+  @@index([billId])
+  @@index([voteDate])
+}
+
+enum Vote {
+  YES
+  NO
+  ABSTAIN
+  ABSENT
+  PRESENT
+  NOT_VOTING
+}
+
+model SavedCandidate {
+  id          String    @id @default(cuid())
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  notes       String?   @db.Text
+
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, candidateId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String            @id @default(cuid())
+
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      NotificationType
+  title     String
+  message   String            @db.Text
+  read      Boolean           @default(false)
+
+  createdAt DateTime          @default(now())
+
+  @@index([userId, read])
+}
+
+enum NotificationType {
+  ELECTION_REMINDER
+  CANDIDATE_UPDATE
+  NEW_VOTING_RECORD
+  VERIFICATION_STATUS
+}
+
+model Election {
+  id          String   @id @default(cuid())
+  name        String
+  date        DateTime
+  type        String   // Primary, General, Special
+  state       String?
+  county      String?
+  city        String?
+  description String?  @db.Text
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@index([state])
+}
