@@ -269,7 +269,7 @@ export async function getSurveyStatistics() {
 
     const avgCompletion =
       allResults.length > 0
-        ? allResults.reduce((sum, r) => sum + r.completionPercentage, 0) /
+        ? allResults.reduce((sum: number, r: any) => sum + r.completionPercentage, 0) /
           allResults.length
         : 0;
 

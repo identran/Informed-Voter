@@ -1,4 +1,9 @@
-import { Candidate, Stance, VotingRecord, Bill, User } from '@prisma/client';
+// Temporary type definitions until Prisma client is generated
+type Candidate = any;
+type Stance = any;
+type VotingRecord = any;
+type Bill = any;
+// type User = any; // Commented to avoid conflict
 
 // API Response types
 export interface ApiResponse<T = any> {

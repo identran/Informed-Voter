@@ -109,3 +109,6 @@ export const generateToken = (userId: string, email: string, role: UserRole): st
     expiresIn: env.JWT_EXPIRES_IN,
   });
 };
+
+// Alias for consistency
+export const requireAuth = authenticate;

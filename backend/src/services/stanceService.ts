@@ -95,7 +95,7 @@ export const stanceService = {
       _count: true,
     });
 
-    const result = categories.map(c => ({
+    const result = categories.map((c: any) => ({
       category: c.category,
       count: c._count,
     }));
