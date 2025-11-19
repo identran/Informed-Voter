@@ -19,8 +19,13 @@ model User {
   location      String?
   zipCode       String?
 
-  savedCandidates SavedCandidate[]
-  notifications   Notification[]
+  savedCandidates    SavedCandidate[]
+  notifications      Notification[]
+  surveyResponses    UserSurveyResponse[]
+  candidateMatches   CandidateMatch[]
+  ballots            UserBallot[]
+  swipeActions       SwipeAction[]
+  pollResponses      PollResponse[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -69,9 +74,15 @@ model Candidate {
   localGovId        String?            // Local government
 
   // Relations
-  stances           CandidateStance[]
-  votingRecords     VotingRecord[]
-  savedBy           SavedCandidate[]
+  stances            CandidateStance[]
+  votingRecords      VotingRecord[]
+  savedBy            SavedCandidate[]
+  matches            CandidateMatch[]
+  swipeActions       SwipeAction[]
+  pollResponses      PollResponse[]
+  aggregatedPollData AggregatedPollData?
+  verification       CandidateVerification?
+  violations         ContentViolationLog[]
 
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -96,8 +107,9 @@ model Stance {
   order       Int      @default(0)
   isActive    Boolean  @default(true)
 
-  candidates  CandidateStance[]
-  bills       BillStance[]
+  candidates       CandidateStance[]
+  bills            BillStance[]
+  surveyQuestions  SurveyQuestion[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -284,9 +296,232 @@ model Election {
   city        String?
   description String?  @db.Text
 
+  ballotMeasures BallotMeasure[]
+  userBallots    UserBallot[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([date])
   @@index([state])
+}
+
+// ============================================
+// PHASE 2 MODELS: VOTER MATCHING & SURVEY
+// ============================================
+
+model SurveyQuestion {
+  id              String   @id @default(cuid())
+
+  stanceId        String
+  stance          Stance   @relation(fields: [stanceId], references: [id], onDelete: Cascade)
+
+  text            String   @db.Text
+  category        String
+  scope           String   // national, state, local
+  responseType    String   // support-oppose, scale, multiple-choice
+  options         String[] // For multiple-choice questions
+  order           Int
+  isActive        Boolean  @default(true)
+
+  responses       UserSurveyResponse[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@index([scope])
+  @@index([isActive])
+}
+
+model UserSurveyResponse {
+  id              String   @id @default(cuid())
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  questionId      String
+  question        SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  position        String   // support, oppose, neutral, or custom response
+  importance      Int      // 1-5 scale
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, questionId])
+  @@index([userId])
+}
+
+model CandidateMatch {
+  id              String   @id @default(cuid())
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  candidateId     String
+  candidate       Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  alignmentScore  Float    // 0-100 percentage
+  calculatedAt    DateTime @default(now())
+
+  @@unique([userId, candidateId])
+  @@index([userId, alignmentScore])
+  @@index([candidateId])
+}
+
+// ============================================
+// PHASE 2 MODELS: BALLOT PREVIEW
+// ============================================
+
+model BallotMeasure {
+  id              String   @id @default(cuid())
+
+  electionId      String
+  election        Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+
+  measureNumber   String
+  title           String
+  summary         String   @db.Text
+  fullText        String?  @db.Text
+  fiscalImpact    String?  @db.Text
+
+  state           String?
+  county          String?
+  city            String?
+
+  sourceUrl       String
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([electionId])
+  @@index([state])
+}
+
+model UserBallot {
+  id              String   @id @default(cuid())
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  electionId      String
+  election        Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+
+  selections      Json     // Stores user's ballot choices
+  notes           String?  @db.Text
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, electionId])
+  @@index([userId])
+}
+
+// ============================================
+// PHASE 2 MODELS: SWIPE INTERFACE
+// ============================================
+
+model SwipeAction {
+  id              String   @id @default(cuid())
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  candidateId     String
+  candidate       Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  action          String   // right, left, up, down
+  timestamp       DateTime @default(now())
+
+  @@index([userId])
+  @@index([candidateId])
+  @@index([timestamp])
+}
+
+// ============================================
+// PHASE 2 MODELS: PUBLIC POLLING
+// ============================================
+
+model PollResponse {
+  id              String   @id @default(cuid())
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  candidateId     String
+  candidate       Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  intentToVote    String   // definitely, likely, unlikely, definitely_not
+  favorability    Int      // 1-5 scale
+
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, candidateId])
+  @@index([candidateId])
+}
+
+model AggregatedPollData {
+  id                  String   @id @default(cuid())
+
+  candidateId         String   @unique
+  candidate           Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  intentPercentage    Float    // Percentage who intend to vote (0-100)
+  favorabilityAvg     Float    // Average favorability (1-5)
+  responseCount       Int      // Total number of responses
+
+  lastCalculated      DateTime @default(now())
+
+  @@index([lastCalculated])
+  @@index([responseCount])
+}
+
+// ============================================
+// PHASE 2 MODELS: CANDIDATE PORTAL & MODERATION
+// ============================================
+
+model CandidateVerification {
+  id              String   @id @default(cuid())
+
+  candidateId     String   @unique
+  candidate       Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  idDocumentUrl   String?  // S3 URL for uploaded ID
+  governmentUrl   String?  // Official .gov profile or campaign registration
+  verificationMethod String? // email, id_upload, government_record
+
+  status          String   @default("pending") // pending, approved, rejected
+  reviewedBy      String?  // Admin user ID
+  reviewedAt      DateTime?
+  rejectionReason String?  @db.Text
+  notes           String?  @db.Text
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+}
+
+model ContentViolationLog {
+  id              String   @id @default(cuid())
+
+  candidateId     String
+  candidate       Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  violationType   String   // opponent_mention, party_reference, profanity, length_exceeded
+  field           String   // bio, goals, reasonForRunning, etc.
+  excerpt         String   @db.Text
+  confidence      Float    // 0-1 confidence score from automated detection
+
+  resolved        Boolean  @default(false)
+  resolvedBy      String?  // Admin user ID
+  resolvedAt      DateTime?
+  resolution      String?  @db.Text
+
+  createdAt       DateTime @default(now())
+
+  @@index([candidateId, resolved])
+  @@index([violationType])
+  @@index([createdAt])
 }
