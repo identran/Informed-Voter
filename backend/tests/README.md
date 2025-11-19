@@ -1,7 +1,7 @@
 # Informed Voter Platform - API Test Suite
 
 ## Overview
-Comprehensive integration tests for all Phase 2A API endpoints using Jest and Supertest.
+Comprehensive integration tests for all Phase 2A and Phase 2B API endpoints using Jest and Supertest.
 
 ## Test Coverage
 
@@ -58,6 +58,30 @@ Comprehensive integration tests for all Phase 2A API endpoints using Jest and Su
 - Response updates
 - Admin-only trends
 
+### Ballot API Tests (`tests/api/ballot.test.ts`)
+**10 endpoints tested:**
+- ✅ GET `/api/ballot/preview` - Get ballot preview for address
+- ✅ POST `/api/ballot/save` - Save ballot preview
+- ✅ GET `/api/ballot/saved` - Get user's saved ballot previews
+- ✅ GET `/api/ballot/saved/:id` - Get specific ballot preview
+- ✅ DELETE `/api/ballot/saved/:id` - Delete ballot preview
+- ✅ GET `/api/ballot/elections` - Get upcoming elections
+- ✅ POST `/api/ballot/reminder` - Create election reminder
+- ✅ GET `/api/ballot/reminders` - Get user's election reminders
+- ✅ DELETE `/api/ballot/reminder/:id` - Delete election reminder
+- ✅ GET `/api/ballot/guide/:id` - Get ballot guide summary
+
+**Test Scenarios:**
+- Google Civic API integration
+- Public vs protected endpoints
+- Address validation
+- Ballot preview save/retrieve/delete
+- Election reminders with date validation
+- Ballot guide generation
+- User isolation (can't access other users' data)
+
+**Note:** Ballot tests require Google Civic Information API to be configured with `GOOGLE_CIVIC_API_KEY` environment variable. Some tests will gracefully handle API not being configured.
+
 ## Running Tests
 
 ### Install Dependencies
@@ -80,6 +104,7 @@ npm run test:watch
 npm test -- tests/api/survey.test.ts
 npm test -- tests/api/swipe.test.ts
 npm test -- tests/api/polls.test.ts
+npm test -- tests/api/ballot.test.ts
 ```
 
 ### Run with Coverage

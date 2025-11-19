@@ -95,11 +95,12 @@ Expected output:
 PASS  tests/api/survey.test.ts
 PASS  tests/api/swipe.test.ts
 PASS  tests/api/polls.test.ts
+PASS  tests/api/ballot.test.ts
 
-Test Suites: 3 passed, 3 total
-Tests:       57 passed, 57 total
+Test Suites: 4 passed, 4 total
+Tests:       82 passed, 82 total
 Snapshots:   0 total
-Time:        15.234s
+Time:        18.456s
 ```
 
 ### Run Specific Test File
@@ -113,6 +114,9 @@ npm test -- tests/api/swipe.test.ts
 
 # Polls API tests
 npm test -- tests/api/polls.test.ts
+
+# Ballot API tests
+npm test -- tests/api/ballot.test.ts
 ```
 
 ### Watch Mode (Auto-rerun on changes)
@@ -351,7 +355,7 @@ If tests still fail after following this guide:
 4. Review `tests/README.md` for detailed documentation
 
 **Expected Test Results:**
-- ✅ 57 test scenarios
-- ✅ All 22 API endpoints covered
-- ✅ ~15 second execution time
+- ✅ 82 test scenarios (18 survey + 20 swipe + 19 polls + 25 ballot)
+- ✅ All 32 API endpoints covered (Phase 2A + Phase 2B)
+- ✅ ~18 second execution time
 - ✅ 80%+ code coverage
